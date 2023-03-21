@@ -1,32 +1,32 @@
-name: Running Code Coverage
+# For more configuration details:
+# https://docs.codecov.io/docs/codecov-yaml
 
-on: [push, pull_request]
+# Check if this file is valid by running in bash:
+# curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
 
-jobs:
-  build:
+# Coverage configuration
+# ----------------------
+coverage:
+  status:
+    patch: false
 
-    runs-on: ubuntu-latest
+  range: 70..90     # First number represents red, and second represents green
+                    # (default is 70..100)
+  round: down       # up, down, or nearest
+  precision: 2      # Number of decimal places, between 0 and 5
 
-    strategy:
-      matrix:
-        node-version: [12.x, 13.x, 14.x, 15.x]
+# Ignoring Paths
+# --------------
+# which folders/files to ignore
+ignore:
+  - */tests/.*
+  - */_version.py
+  - setup.py
+  - versioneer.py
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 2
-
-    - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Run tests
-      run: npm run test
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+# Pull request comments:
+# ----------------------
+# Diff is the Coverage Diff of the pull request.
+# Files are the files impacted by the pull request
+comment:
+  layout: diff, files  # accepted in any order: reach, diff, flags, and/or files
