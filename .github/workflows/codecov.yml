@@ -1,43 +1,30 @@
-version: 2.1
-setup: true
-orbs:
-  orb-tools: circleci/orb-tools@11
+codecov:
+  require_ci_to_pass: yes
+  branch: master
 
-filters: &filters
-  tags:
-    only: /.*/
-    
-on:
-  push:
-    paths:
-      - '.github/workflows/foo_**'    
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: 0%
+        threshold: 100%
+    patch:
+      default:
+        target: 0%
+        threshold: 100%
 
-workflows:
-  lint-pack:
-    jobs:
-      - orb-tools/lint:
-          filters: *filters
-      - orb-tools/pack:
-          filters: *filters
-      - orb-tools/review:
-          filters: *filters
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
 
-      # release dev version of orb, for testing & possible publishing.
-      # orb will be published as dev:alpha and dev:${CIRCLE_SHA1:0:7}.
-      - orb-tools/publish:
-          circleci-token: ORB_PUBLISH_TOKEN
-          context: Codecov Orb Context
-          enable-pr-comment: false
-          filters: *filters
-          orb-name: codecov/codecov
-          pub-type: dev
-          vcs-type: << pipeline.project.type >>
-          requires: [orb-tools/lint, orb-tools/review, orb-tools/pack]
-
-      # trigger an integration workflow to test the
-      # dev:${CIRCLE_SHA1:0:7} version of your orb
-      - orb-tools/continue:
-          filters: *filters
-          pipeline-number: << pipeline.number >>
-          vcs-type: << pipeline.project.type >>
-          requires: [orb-tools/publish]
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: no
