@@ -6,6 +6,11 @@ orbs:
 filters: &filters
   tags:
     only: /.*/
+    
+on:
+  push:
+    paths:
+      - '.github/workflows/foo_**'    
 
 workflows:
   lint-pack:
