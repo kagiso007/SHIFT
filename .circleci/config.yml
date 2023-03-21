@@ -1,73 +1,57 @@
 version: 2.1
-orbs:
-  codecov: codecov/codecov@1.0.2
 
-Run-With-Node:
-    docker:
-      - image: circleci/node:10-browsers
-    steps:
-      - checkout
-      - run:
-          name: install and run tests
-          command: |
-            yarn install && yarn test
-      - codecov/upload:
-          file: './coverage/clover.xml'
-          token: a54dd748-b4c5-4854-ba6b-25d81f6a2e3a
+orbs:
+  coveralls: coveralls/coveralls@2.0.0
+  node: circleci/node@1.1.6
+
 jobs:
-  Hello-World:
-    docker:
-      - image: alpine:3.7
-    steps:
-      - run:
-          name: Hello World
-          command: |
-            echo 'Hello World!'
-            echo 'This is the delivery pipeline'
-  I-Have-Code:
-    docker:
-      - image: alpine:3.7
+  build-1:
+    executor:
+      name: node/default
+
     steps:
       - checkout
-      - run:
-          name: Code Has Arrived
-          command: |
-            ls -al
-            echo '^^^That should look familiar^^^'
-  Run-With-Node:
-    docker:
-      - image: circleci/node:10-browsers
+
+      - node/with-cache:
+          steps:
+            - run: npm install
+            - run: make test-coverage-1
+
+      - coveralls/upload:
+          parallel: true
+          flag_name: Test 1
+          verbose: true
+
+  build-2:
+    executor:
+      name: node/default
+
     steps:
-      - run:
-          name: Running In A Container With Node
-          command: |
-            node -v
-  Now-Complete:
-    docker:
-      - image: alpine:3.7
+      - checkout
+
+      - node/with-cache:
+          steps:
+            - run: npm install
+            - run: make test-coverage-2
+
+      - coveralls/upload:
+          parallel: true
+          flag_name: Test 2
+          verbose: true
+
+  done:
+    executor:
+      name: node/default
+
     steps:
-      - run:
-          name: Approval Complete
-          command: |
-            echo 'Do work once the approval has completed'
-And on the bottom of the file, we create the workflows:
+      - coveralls/upload:
+          parallel_finished: true
+          carryforward: "Test 1,Test 2"
 
 workflows:
- version: 2
- Example_Workflow:
-   jobs:
-     - Hello-World
-     - I-Have-Code:
-         requires:
-           - Hello-World
-     - Run-With-Node:
-         requires:
-           - Hello-World
-     - Hold-For-Approval:
-         type: approval
-         requires:
-           - Run-With-Node
-           - I-Have-Code
-     - Now-Complete:
-         requires:
-           - Hold-For-Approval
+  test_parallel_then_upload:
+    jobs:
+      - build-1
+      - build-2
+      - done:
+          requires: [build-1, build-2]
