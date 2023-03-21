@@ -1,32 +1,38 @@
-# For more configuration details:
-# https://docs.codecov.io/docs/codecov-yaml
+version: 2.1
+setup: true
+orbs:
+  orb-tools: circleci/orb-tools@11
 
-# Check if this file is valid by running in bash:
-# curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
+filters: &filters
+  tags:
+    only: /.*/
 
-# Coverage configuration
-# ----------------------
-coverage:
-  status:
-    patch: false
+workflows:
+  lint-pack:
+    jobs:
+      - orb-tools/lint:
+          filters: *filters
+      - orb-tools/pack:
+          filters: *filters
+      - orb-tools/review:
+          filters: *filters
 
-  range: 70..90     # First number represents red, and second represents green
-                    # (default is 70..100)
-  round: down       # up, down, or nearest
-  precision: 2      # Number of decimal places, between 0 and 5
+      # release dev version of orb, for testing & possible publishing.
+      # orb will be published as dev:alpha and dev:${CIRCLE_SHA1:0:7}.
+      - orb-tools/publish:
+          circleci-token: ORB_PUBLISH_TOKEN
+          context: Codecov Orb Context
+          enable-pr-comment: false
+          filters: *filters
+          orb-name: codecov/codecov
+          pub-type: dev
+          vcs-type: << pipeline.project.type >>
+          requires: [orb-tools/lint, orb-tools/review, orb-tools/pack]
 
-# Ignoring Paths
-# --------------
-# which folders/files to ignore
-ignore:
-  - */tests/.*
-  - */_version.py
-  - setup.py
-  - versioneer.py
-
-# Pull request comments:
-# ----------------------
-# Diff is the Coverage Diff of the pull request.
-# Files are the files impacted by the pull request
-comment:
-  layout: diff, files  # accepted in any order: reach, diff, flags, and/or files
+      # trigger an integration workflow to test the
+      # dev:${CIRCLE_SHA1:0:7} version of your orb
+      - orb-tools/continue:
+          filters: *filters
+          pipeline-number: << pipeline.number >>
+          vcs-type: << pipeline.project.type >>
+          requires: [orb-tools/publish]
