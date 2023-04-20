@@ -1,7 +1,7 @@
 # SHIFT
 SOFTWARE DESIGN PROJECT ( ONLINE TOURNAMENT PLATFORM)
 
-![example workflow](https://github.com/github/docs/actions/workflows/build.yml/badge.svg)
+![example workflow](https://github.com/github/kagiso007/SHIFT/actions/workflows/build.yml/badge.svg)
 
 code coverage
 
