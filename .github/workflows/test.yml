@@ -1,25 +1,14 @@
-on: ["push", "pull_request"]
+name: codacy-coverage-reporter
 
-name: Test Coveralls
+on: ["push"]
 
 jobs:
-
-  build:
-    name: Build
+  codacy-coverage-reporter:
     runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
     steps:
-
-    - uses: actions/checkout@v3
-
-    - name: Use Node.js 16.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 16.x
-
-    - name: npm install, make test-coverage
-      run: |
-        npm install
-        make test-coverage
-
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2
+      - uses: actions/checkout@v2
+      - name: Run codacy-coverage-reporter
+        uses: ./
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
