@@ -1,7 +1,7 @@
 /* eslint-disable */
-var addSorting = (function () {
+let addSorting = (function () {
     'use strict';
-    var cols,
+    let cols,
         currentSort = {
             index: 0,
             desc: false
