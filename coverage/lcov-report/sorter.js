@@ -1,5 +1,5 @@
 /* eslint-disable */
-var addSorting = (function() {
+var addSorting = (function () {
     'use strict';
     var cols,
         currentSort = {
@@ -43,15 +43,15 @@ var addSorting = (function() {
 
     // loads the search box
     function addSearchBox() {
-        var template = document.getElementById('filterTemplate');
-        var templateClone = template.content.cloneNode(true);
+        let template = document.getElementById('filterTemplate');
+        let templateClone = template.content.cloneNode(true);
         templateClone.getElementById('fileSearch').oninput = onFilterInput;
         template.parentElement.appendChild(templateClone);
     }
 
     // loads all columns
     function loadColumns() {
-        var colNodes = getTableHeader().querySelectorAll('th'),
+        let colNodes = getTableHeader().querySelectorAll('th'),
             colNode,
             cols = [],
             col,
@@ -76,7 +76,7 @@ var addSorting = (function() {
     // attaches a data attribute to every tr element with an object
     // of data values keyed by column name
     function loadRowData(tableRow) {
-        var tableCols = tableRow.querySelectorAll('td'),
+        let tableCols = tableRow.querySelectorAll('td'),
             colNode,
             col,
             data = {},
@@ -95,7 +95,7 @@ var addSorting = (function() {
     }
     // loads all row data
     function loadData() {
-        var rows = getTableBody().querySelectorAll('tr'),
+        let rows = getTableBody().querySelectorAll('tr'),
             i;
 
         for (i = 0; i < rows.length; i += 1) {
@@ -104,8 +104,8 @@ var addSorting = (function() {
     }
     // sorts the table using the data for the ith column
     function sortByIndex(index, desc) {
-        var key = cols[index].key,
-            sorter = function(a, b) {
+        let key = cols[index].key,
+            sorter = function (a, b) {
                 a = a.data[key];
                 b = b.data[key];
                 return a < b ? -1 : a > b ? 1 : 0;
@@ -117,7 +117,7 @@ var addSorting = (function() {
             i;
 
         if (desc) {
-            finalSorter = function(a, b) {
+            finalSorter = function (a, b) {
                 return -1 * sorter(a, b);
             };
         }
@@ -154,7 +154,7 @@ var addSorting = (function() {
             ithSorter = function ithSorter(i) {
                 var col = cols[i];
 
-                return function() {
+                return function () {
                     var desc = col.defaultDescSort;
 
                     if (currentSort.index === i) {
@@ -181,7 +181,7 @@ var addSorting = (function() {
         }
     }
     // adds sorting functionality to the UI
-    return function() {
+    return function () {
         if (!getTable()) {
             return;
         }
