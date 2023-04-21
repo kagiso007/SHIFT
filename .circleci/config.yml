@@ -18,18 +18,40 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
-    steps:
-      - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+  tests:
+      name: Tests
+ 
+      runs-on: ubuntu-latest
+      
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+          with:
+            fetch-depth: 0
+          
+        - name: Setup PHP with Xdebug
+          uses: shivammathur/setup-php@v2
+          with:
+            php-version: '8.1'
+            coverage: xdebug
+            
+        - name: Install dependencies with composer
+          run: composer update --no-ansi --no-interaction
+ --no-progress
+          
+        - name: Run tests with phpunit/phpunit
+          run: vendor/bin/phpunit
+ --coverage-clover=coverage.xml
+          
+        - name: Fix code coverage paths
+          run: sed -i 
+'s@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+          
+        - name: SonarCloud Scan
+          uses: SonarSource/sonarcloud-github-action@master
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
