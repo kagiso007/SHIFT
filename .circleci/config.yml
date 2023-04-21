@@ -1,92 +1,87 @@
-version: 2.0
-defaults: &defaults
-  working_directory: ~/repo
-  docker:
-    - image: circleci/ruby:2.4.2-jessie-node-browsers
-      environment:
-        PGHOST: 127.0.0.1
-        PGUSER: loot_user
-        RAILS_ENV: test
-    - image: circleci/postgres:9.5-alpine
-      environment:
-        POSTGRES_USER: loot_user
-        POSTGRES_DB: loot_test
-        POSTGRES_PASSWORD: ""
+# https://circleci.com/docs/2.0/collect-test-data/
+# https://github.com/codeclimate/test-reporter/issues/342
+version: 2
 jobs:
-  build:
-    <<: *defaults
-    steps:
-      - run:
-          name:  Download cc-test-reporter
-          command: |
-            mkdir -p tmp/
-            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./tmp/cc-test-reporter
-            chmod +x ./tmp/cc-test-reporter
-      - persist_to_workspace:
-          root: tmp
-          paths:
-            - cc-test-reporter
-  backend-tests:
-    <<: *defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/repo/tmp
-      - run: 
-          name: Setup dependencies
-          command: |
-            bundle install --without production --path=${BUNDLE_PATH:-vendor/bundle}
-            bundle exec rake db:create db:migrate
-      - run: 
-          name: Run backend tests
-          command: |
-            bundle exec rake
-            ./tmp/cc-test-reporter format-coverage -t simplecov -o tmp/codeclimate.backend.json coverage/backend/.resultset.json
-      - persist_to_workspace:
-          root: tmp
-          paths: 
-            - codeclimate.backend.json
-  frontend-tests:
-    <<: *defaults
-    steps:
-      - checkout 
-      - attach_workspace:
-          at: ~/repo/tmp
-      - run: npm install
-      - run: 
-          name: Run frontend testss
-          command: |
-            npm test
-            ./tmp/cc-test-reporter format-coverage -t lcov -o tmp/codeclimate.frontend.json coverage/frontend/lcov.info
-      - persist_to_workspace:
-          root: tmp
-          paths: 
-            - codeclimate.frontend.json
-  upload-coverage:
-    <<: *defaults
-    environment: 
-      - CC_TEST_REPORTER_ID: a817de3ca7ee9b83c7cd9fc46bb5e8c423e167b54f191ba218edd910a9cda8ec
-    steps:
-      - attach_workspace:
-          at: ~/repo/tmp
-      - run:
-          name: Upload coverage results to Code Climate
-          command: |
-            ./tmp/cc-test-reporter sum-coverage tmp/codeclimate.*.json -p 2 -o tmp/codeclimate.total.json
-            ./tmp/cc-test-reporter upload-coverage -i tmp/codeclimate.total.json
-workflows:
-  version: 2
+    build:
+        docker:
+            - image: circleci/node:12.13.0
+        working_directory: ~/repo
+        steps:
+            - checkout
 
-  commit:
-    jobs:
-      - build
-      - backend-tests:
-          requires:
-            - build
-      - frontend-tests: 
-          requires: 
-             - build
-      - upload-coverage:
-          requires:
-             - backend-tests
-             - frontend-tests
+            # Update npm
+            - run:
+                name: update-npm
+                command: 'sudo npm install -g npm@latest'
+
+            # Download and cache dependencies
+            - restore_cache:
+                keys:
+                    - v1-dependencies-{{ checksum "package-lock.json" }}
+                    # fallback to using the latest cache if no exact match is found
+                    - v1-dependencies-
+
+            - run: 
+                name: Install dependencies
+                command: npm install
+
+            - save_cache:
+                paths:
+                    - node_modules
+                key: v1-dependencies-{{ checksum "package-lock.json" }}
+
+            # - run: mkdir reports
+
+            # Run mocha
+            - run:
+                name: Run tests
+                command: npm test
+                when: always
+
+            # Run coverage
+            - run:
+                name: Run coverage
+                command: npm run cover
+                when: always
+
+            # Run eslint
+            # - run:
+            #     name: eslint
+            #     command: |
+            #         ./node_modules/.bin/eslint ./ --format junit --output-file ./reports/eslint/eslint.xml
+            #     when: always
+
+            # Run coverage report for Code Climate
+
+            - run:
+                name: Setup Code Climate test-reporter
+                command: |
+                    # download test reporter as a static binary
+                    curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+                    chmod +x ./cc-test-reporter
+                    ./cc-test-reporter before-build
+                when: always
+
+            - run:
+                name: Send coverage report to Code Climate
+                command:
+                    # nyc report requires that nyc has already been run,
+                    # which creates the .nyc_output folder containing necessary data
+                    # ./node_modules/.bin/nyc report --reporter=text-lcov > coverage/lcov.info
+                    ./cc-test-reporter after-build -t lcov
+                when: always
+
+            # Upload results
+
+            # - store_test_results:
+            #     path: reports
+
+            # - store_artifacts:
+            #     path: ./reports/mocha/test-results.xml
+
+            # - store_artifacts:
+            #     path: ./reports/eslint/eslint.xml
+
+            - store_artifacts: # upload test coverage as artifact
+                path: ./coverage/lcov.info
+                prefix: tests
