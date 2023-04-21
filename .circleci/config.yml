@@ -65,7 +65,7 @@ jobs:
   upload-coverage:
     <<: *defaults
     environment: 
-      - CC_TEST_REPORTER_ID: YOUR_REPO_CC_TEST_REPORTER_ID
+      - CC_TEST_REPORTER_ID: a817de3ca7ee9b83c7cd9fc46bb5e8c423e167b54f191ba218edd910a9cda8ec
     steps:
       - attach_workspace:
           at: ~/repo/tmp
